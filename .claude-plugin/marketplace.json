@@ -1,0 +1,11 @@
+{
+  "name": "pixel3d-kit",
+  "owner": { "name": "pixel3d-kit contributors" },
+  "plugins": [
+    {
+      "name": "pixel3d-kit",
+      "source": "./",
+      "description": "3D → pixel-art rendering techniques for Claude Code (Three.js module + Godot/Unity recipes) and a learn-from-video skill."
+    }
+  ]
+}

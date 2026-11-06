@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>pixel3d demo</title>
+<style>
+  :root { --bg: #11161a; --panel: #1b2329ee; --text: #e8eef2; --muted: #93a4ae; --accent: #f26b5b; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, sans-serif; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
+  #ui { position: fixed; top: 12px; left: 12px; background: var(--panel); padding: 12px 14px; border-radius: 10px; max-width: 280px; }
+  #ui h1 { font-size: 14px; margin: 0 0 8px; }
+  #ui label { display: flex; gap: 8px; align-items: center; margin: 3px 0; cursor: pointer; }
+  #ui .n { color: var(--accent); font-weight: 700; width: 1.2em; }
+  #ui .row { margin-top: 8px; color: var(--muted); }
+  #ui button { margin-top: 8px; background: #2b3740; color: var(--text); border: 0; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+  #hint { position: fixed; bottom: 12px; left: 12px; color: var(--muted); }
+  @media (max-width: 600px) { #ui { max-width: calc(100vw - 56px); font-size: 12px; } }
+</style>
+</head>
+<body>
+<div id="ui">
+  <h1>3D → 도트 (pixel3d)</h1>
+  <label><input type="checkbox" id="lowres" checked><span class="n">1</span>저해상도 렌더</label>
+  <label><input type="checkbox" id="outline" checked><span class="n">2</span>1픽셀 외곽선</label>
+  <label><input type="checkbox" id="creases" checked><span class="n">3</span>안쪽 굴곡선</label>
+  <label><input type="checkbox" id="toon" checked><span class="n">4</span>계단식 명암</label>
+  <label><input type="checkbox" id="normals" checked><span class="n">5</span>빛 방향·그림자 모양 편집</label>
+  <label><input type="checkbox" id="snap" checked><span class="n">6</span>픽셀 격자 정렬</label>
+  <label><input type="checkbox" id="steprot" checked><span class="n">7</span>각도 띄엄띄엄 회전</label>
+  <label><input type="checkbox" id="flatten" checked><span class="n">8</span>스프라이트식 겹침 순서</label>
+  <div class="row">픽셀 크기 <input type="range" id="px" min="2" max="8" value="4"> <span id="pxv">4</span></div>
+  <button id="all">전체 끄기/켜기</button>
+</div>
+<div id="hint">WASD / 방향키로 이동 · 가만히 있으면 자동으로 걸어요</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {
+  PixelRenderer, createToonMaterial, sphericalizeNormals,
+  addShadowProxy, quantizeAngle, flattenDepth,
+} from '../../skills/pixel-3d/assets/threejs/pixel3d.js';
+
+// ---------- renderer / camera ----------
+const renderer = new THREE.WebGLRenderer({ antialias: false });
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.BasicShadowMap; // crisp, pixel-friendly shadows
+document.body.appendChild(renderer.domElement);
+renderer.setSize(innerWidth, innerHeight);
+
+const pixel = new PixelRenderer(renderer, { pixelSize: 4 });
+
+const VIEW = 9; // world units visible vertically
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
+function fitCamera() {
+  const a = innerWidth / innerHeight;
+  camera.left = -VIEW * a / 2; camera.right = VIEW * a / 2;
+  camera.top = VIEW / 2; camera.bottom = -VIEW / 2;
+  camera.updateProjectionMatrix();
+}
+fitCamera();
+const camOffset = new THREE.Vector3(10, 11, 10);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0e1a20);
+
+// ---------- lights ----------
+scene.add(new THREE.HemisphereLight(0x9fb8ff, 0x2a3a20, 0.9));
+const sun = new THREE.DirectionalLight(0xfff1d6, 2.2);
+sun.position.set(6, 12, 3);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 40 });
+scene.add(sun, sun.target);
+const torch = new THREE.PointLight(0xff8a3c, 6, 6, 1.5);
+scene.add(torch);
+
+// ---------- material variants (technique 4 on/off) ----------
+const swappable = [];
+function mat(color, opts = {}) {
+  const toon = createToonMaterial({ color, steps: 3, ...opts });
+  const smooth = new THREE.MeshStandardMaterial({ color, roughness: 0.9, ...opts });
+  return { toon, smooth };
+}
+function mesh(geo, color, opts) {
+  const m = mat(color, opts);
+  const o = new THREE.Mesh(geo, m.toon);
+  o.userData.mats = m; o.castShadow = o.receiveShadow = true;
+  swappable.push(o);
+  return o;
+}
+
+// ---------- world ----------
+const rand = (() => { let s = 7; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+for (let x = -10; x <= 10; x++) for (let z = -10; z <= 10; z++) {
+  const path = Math.abs(x - z) <= 1 || (x === 2 && z < 2);
+  const h = path ? 0.3 : 0.3 + (rand() < 0.15 ? 0.06 : 0);
+  const c = path ? (rand() < 0.5 ? 0x7d8a8c : 0x6f7c7f) : (rand() < 0.5 ? 0x4f8a4a : 0x467d43);
+  const t = mesh(new THREE.BoxGeometry(1, h, 1), c);
+  t.position.set(x, h / 2 - 0.3, z);
+  t.castShadow = false;
+  scene.add(t);
+}
+
+// raised cliff the character walks along (technique 8 shows here)
+for (let i = -3; i <= 3; i++) {
+  const b = mesh(new THREE.BoxGeometry(1, 1.2, 1), i % 2 ? 0x6b5a48 : 0x5f4f40);
+  b.position.set(-3, 0.6, i);
+  const top = mesh(new THREE.BoxGeometry(1, 0.15, 1), 0x4f8a4a);
+  top.position.set(-3, 1.27, i);
+  scene.add(b, top);
+}
+
+// chapel
+const chapel = new THREE.Group();
+const walls = mesh(new THREE.BoxGeometry(3, 2.2, 2.6), 0x5d6f8c);
+walls.position.y = 1.1;
+const roof = mesh(new THREE.ConeGeometry(2.6, 2.2, 4), 0x3a4a68);
+roof.position.y = 3.3; roof.rotation.y = Math.PI / 4;
+const door = mesh(new THREE.BoxGeometry(0.8, 1.2, 0.1), 0x3b2a22);
+door.position.set(0, 0.6, 1.31);
+chapel.add(walls, roof, door);
+chapel.position.set(4, 0, -4);
+scene.add(chapel);
+
+// brazier + fire particles (particles snapped too: integer pixel size)
+const brazier = mesh(new THREE.CylinderGeometry(0.35, 0.25, 0.5, 6), 0x2b2b30);
+brazier.position.set(4, 0.25, -1.9);
+scene.add(brazier);
+torch.position.set(4, 1.1, -1.9);
+const fireGeo = new THREE.BufferGeometry();
+const FIRE = 24;
+fireGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(FIRE * 3), 3));
+const fire = new THREE.Points(fireGeo, new THREE.PointsMaterial({ color: 0xffb347, size: 4, sizeAttenuation: false }));
+scene.add(fire);
+
+// bushes: lumpy geometry; technique 5 = sphericalized normals
+const bushes = [];
+for (const [x, z, s] of [[1.5, -6, 1], [6.5, -1.5, 0.8], [-6, 3, 1.2], [-1, 5, 0.9], [7, 4, 1]]) {
+  const geo = new THREE.IcosahedronGeometry(s, 1);
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const v = new THREE.Vector3().fromBufferAttribute(p, i).multiplyScalar(0.85 + rand() * 0.3);
+    p.setXYZ(i, v.x, v.y, v.z);
+  }
+  geo.computeVertexNormals();
+  const smoothGeo = sphericalizeNormals(geo.clone(), 0.85);
+  const b = mesh(geo, 0x3f7f45);
+  b.userData.geos = { raw: geo, edited: smoothGeo };
+  b.geometry = smoothGeo;
+  b.position.set(x, s * 0.7, z);
+  bushes.push(b);
+  scene.add(b);
+}
+
+// ---------- character ----------
+const hero = new THREE.Group();
+const charMat = (c) => createToonMaterial({ color: c, steps: 3 });
+const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 0.45, 4, 8), charMat(0x3c3f58));
+body.position.y = 0.6;
+const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), charMat(0xe0b18e));
+head.position.y = 1.2;
+const hair = new THREE.Mesh(new THREE.SphereGeometry(0.33, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), charMat(0x6c74c9));
+hair.position.y = 1.24; hair.rotation.x = -0.35;
+const sword = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 1.3), charMat(0xd8dde3));
+sword.position.set(0.5, 0.55, 0.4); sword.rotation.set(0.25, 0.7, 0);
+sword.userData.pixelSnap = true; // technique 6: joints / held items snap too
+for (const m of [body, head, hair, sword]) { m.castShadow = true; hero.add(m); }
+const shadowProxy = addShadowProxy(body, new THREE.CylinderGeometry(0.35, 0.35, 1.2, 8));
+shadowProxy.position.y = 0.2;
+hero.userData.pixelSnap = true;
+hero.position.set(-1.7, 0, 0);
+scene.add(hero);
+const flat = flattenDepth(hero, { bias: 0.4 });
+
+// ---------- UI ----------
+const $ = (id) => document.getElementById(id);
+const ui = { lowres: $('lowres'), outline: $('outline'), creases: $('creases'), toon: $('toon'),
+  normals: $('normals'), snap: $('snap'), steprot: $('steprot'), flatten: $('flatten') };
+function apply() {
+  pixel.setPixelSize(ui.lowres.checked ? +$('px').value : 1);
+  pixel.outline = ui.outline.checked;
+  pixel.creases = ui.creases.checked;
+  for (const o of swappable) o.material = ui.toon.checked ? o.userData.mats.toon : o.userData.mats.smooth;
+  for (const b of bushes) b.geometry = ui.normals.checked ? b.userData.geos.edited : b.userData.geos.raw;
+  body.castShadow = !ui.normals.checked; shadowProxy.visible = ui.normals.checked;
+  pixel.snapCamera = pixel.snapObjects = pixel.subPixelScroll = ui.snap.checked;
+  flat.enabled = ui.flatten.checked;
+}
+// ?off=1,2,8 starts with those techniques off (?off=all for everything)
+const OFF = new URLSearchParams(location.search).get('off');
+if (OFF) Object.values(ui).forEach((el, i) => { if (OFF === 'all' || OFF.split(',').includes(String(i + 1))) el.checked = false; });
+Object.values(ui).forEach((el) => el.addEventListener('change', apply));
+$('px').addEventListener('input', () => { $('pxv').textContent = $('px').value; apply(); });
+$('all').addEventListener('click', () => {
+  const on = !Object.values(ui).every((el) => el.checked);
+  Object.values(ui).forEach((el) => { el.checked = on; });
+  apply();
+});
+addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); pixel.setSize(innerWidth, innerHeight); fitCamera(); apply(); });
+apply();
+
+// ---------- movement ----------
+const keys = new Set();
+addEventListener('keydown', (e) => keys.add(e.key.toLowerCase()));
+addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
+let facing = 0, t = 0;
+const clock = new THREE.Clock();
+const fp = fireGeo.attributes.position;
+const fireSeeds = Array.from({ length: FIRE }, () => [rand(), rand(), rand()]);
+
+// For screenshots/tests: ?t=SECONDS freezes time at that moment.
+const frozen = new URLSearchParams(location.search).get('t');
+const POSE = new URLSearchParams(location.search).get('pose'); // ?pose=wall: technique 8 test
+
+function frame() {
+  const dt = frozen != null ? 0 : Math.min(clock.getDelta(), 0.05);
+  t = frozen != null ? +frozen : t + dt;
+  const move = new THREE.Vector3(
+    (keys.has('d') || keys.has('arrowright')) - (keys.has('a') || keys.has('arrowleft')), 0,
+    (keys.has('s') || keys.has('arrowdown')) - (keys.has('w') || keys.has('arrowup')));
+  if (move.lengthSq()) {
+    move.normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 4);
+    hero.position.addScaledVector(move, dt * 2.5);
+    facing = Math.atan2(move.x, move.z);
+  } else {
+    // auto-walk: a loop that brushes the cliff so the sword pokes into it
+    const a = t * 0.5;
+    const target = new THREE.Vector3(-0.2 + Math.cos(a) * 1.6, 0, Math.sin(a) * 2.6);
+    const d = target.clone().sub(hero.position);
+    if (frozen != null) hero.position.copy(target);
+    else hero.position.addScaledVector(d, Math.min(1, dt * 4));
+    facing = Math.atan2(-Math.sin(a) * 1.6, Math.cos(a) * 2.6);
+  }
+  if (POSE === 'wall') { hero.position.set(-2.15, 0, 0.6); facing = -1.5; } // sword tip into the cliff
+  hero.rotation.y = ui.steprot.checked ? quantizeAngle(facing, 8) : facing;
+  hero.children[0].position.y = 0.6 + Math.abs(Math.sin(t * 8)) * 0.04;
+
+  for (let i = 0; i < FIRE; i++) {
+    const [a, b, c] = fireSeeds[i];
+    const life = (t * (0.8 + a) + b) % 1;
+    fp.setXYZ(i, 4 + (c - 0.5) * 0.5 * (1 - life), 0.55 + life * 1.1, -1.9 + (a - 0.5) * 0.4 * (1 - life));
+  }
+  fp.needsUpdate = true;
+  torch.intensity = 5 + Math.sin(t * 13) * 0.8;
+
+  camera.position.copy(hero.position).add(camOffset);
+  camera.lookAt(hero.position);
+  pixel.render(scene, camera);
+  if (frozen == null) requestAnimationFrame(frame);
+  else document.body.dataset.ready = '1';
+}
+frame();
+</script>
+</body>
+</html>

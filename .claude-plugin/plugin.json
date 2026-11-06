@@ -1,0 +1,8 @@
+{
+  "name": "pixel3d-kit",
+  "version": "0.1.0",
+  "description": "Make real-time 3D look like hand-drawn pixel art (도트): 1-px outlines, crease lines, stepped light, pixel-grid snapping, stepped rotation and sprite-like sorting. Includes a tested Three.js module, Godot/Unity recipes, and a skill that learns techniques from videos.",
+  "author": { "name": "pixel3d-kit contributors" },
+  "license": "MIT",
+  "keywords": ["pixel-art", "3d", "threejs", "godot", "unity", "shader", "toon", "outline", "gamedev"]
+}
