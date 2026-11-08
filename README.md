@@ -25,10 +25,10 @@
 
 ## 설치
 
-Claude Code에서 아래 두 명령을 차례로 실행하세요. `<github-user>`는 이 저장소를 올린 GitHub 계정 이름으로 바꿉니다.
+Claude Code에서 아래 두 명령을 차례로 실행하세요.
 
 ```
-/plugin marketplace add <github-user>/pixel3d-kit
+/plugin marketplace add lattechicken999/pixel3d-kit
 ```
 
 ```
