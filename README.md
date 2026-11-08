@@ -132,6 +132,29 @@ pixel.render(scene, camera);
 
 MIT
 
+## Pro edition
+
+**pixel3d-kit Pro** adds 19 more techniques and 3D-to-sprite tools on top of the 8 here, with the Godot and Unity notes from running them:
+
+![Pro techniques in Unity: grass, water, cloud shadows → colour and light → night → character effects → see-through → 2:1 isometric](docs/unity-extra.gif)
+
+| # | Technique | # | Technique |
+|---|---|---|---|
+| 9 | Hue-shifted light | 19 | Rim light / selective outline (sel-out) |
+| 10 | Auto palette + world-locked dithering | 20 | Drifting fog banks |
+| 11 | Dithered see-through walls | 21 | Night mode with glowing windows |
+| 12 | Animation on twos (12 fps) | 22 | Hit flash + squash and stretch |
+| 13 | Pixel grass with wind | 23 | Smear frames |
+| 14 | Pixel water with foam | 24 | Depth sprites (lit, intersect 3D per pixel) |
+| 15 | Cloud shadows | 25 | Bake at your game's pixel scale, tilts, palette lock |
+| 16 | Sprite-sheet baker | 26 | 2:1 pixel isometric camera |
+| 17 | Vision-circle reveal | 27 | Sprite-stack slice export |
+| 18 | Pixel reflections in water | | |
+
+In Unity 6 URP, techniques 9–15, 17–19, 21–23 and 26 were run and verified in the scene above.
+
+Pro is sold on [Agensi](https://www.agensi.io) under a commercial licence (one per person, use in your own games and apps). This free edition stays MIT.
+
 ---
 
 # 한국어
@@ -267,3 +290,26 @@ pixel.render(scene, camera);
 ## 라이선스
 
 MIT
+
+## Pro 버전
+
+**pixel3d-kit Pro**는 여기 8가지에 기법 19가지와 3D→스프라이트 도구를 더하고, Godot·Unity에서 실행해 확인한 내용을 담았습니다.
+
+![Unity에서 Pro 기법: 풀·물·구름 그림자 → 색·빛 → 밤 → 캐릭터 효과 → 건물 투시 → 2:1 아이소](docs/unity-extra.gif)
+
+| # | 기법 | # | 기법 |
+|---|---|---|---|
+| 9 | 색조 이동 명암 | 19 | 림 라이트 (sel-out) |
+| 10 | 자동 팔레트 + 월드 고정 디더링 | 20 | 흐르는 안개 |
+| 11 | 가리는 물체 도트 투명화 | 21 | 밤 + 창문 불빛 |
+| 12 | 애니메이션 12fps (on twos) | 22 | 타격 번쩍임 + 찌그러짐 |
+| 13 | 도트 풀 + 바람 | 23 | 스미어(잔상) 프레임 |
+| 14 | 도트 물 + 거품 | 24 | 깊이 스프라이트 (빛 받고 3D와 픽셀 단위로 겹침) |
+| 15 | 구름 그림자 | 25 | 게임 픽셀 크기로 굽기, 기울기, 팔레트 고정 |
+| 16 | 스프라이트 시트 굽기 | 26 | 2:1 도트 아이소 카메라 |
+| 17 | 시야 원형 드러내기 | 27 | 스프라이트 스택 단면 굽기 |
+| 18 | 물 반사 | | |
+
+Unity 6 URP에서는 위 장면으로 기법 9~15, 17~19, 21~23, 26을 실행해 검증했습니다.
+
+Pro는 [Agensi](https://www.agensi.io)에서 상업용 라이선스(1인 1라이선스, 자기 게임·앱에 사용 가능)로 판매합니다. 이 무료판은 계속 MIT입니다.
