@@ -1,8 +1,144 @@
 # pixel3d-kit
 
-**3D를 손으로 찍은 도트처럼.** 이 Claude Code 플러그인은 실시간 3D 장면을 도트(픽셀아트) 게임처럼 보이게 만드는 기법 8가지를 모았습니다. 플러그인을 설치한 뒤 "도트풍으로 만들어줘"라고 하면, Claude가 프로젝트 엔진에 맞춰 기법을 적용하고 스크린샷으로 결과를 확인합니다.
+**English** · [한국어](#한국어)
 
-*Make real-time 3D look like hand-drawn pixel art. This is a Claude Code plugin with a tested Three.js module, Godot and Unity recipes, and a skill that learns rendering techniques from videos.*
+**Real-time 3D that reads as hand-drawn pixel art.** This Claude Code plugin collects 8 techniques that make a real-time 3D scene look like a pixel-art game. Install it and say "make this look like pixel art": Claude applies the techniques to your project's engine and checks the result with screenshots.
+
+![Left: techniques off / right: all 8 techniques on](docs/before-after.png)
+
+## The 8 techniques
+
+Lowering the resolution alone does not make pixel art; it makes blurry low-res 3D. These techniques work together.
+
+| # | Technique | What it does |
+|---|---|---|
+| 1 | Low-res render, upscaled with no filtering | Pixels in the first place |
+| 2 | **1-px outlines** (from depth edges) | Objects read as crisp sprites |
+| 3 | **Lines on inner creases** (from normal edges) | Hand-drawn detail inside silhouettes |
+| 4 | **Stepped shading** (fixed bands, optional palette) | No smooth 3D gradients |
+| 5 | **Edited light response + separate shadow shapes** | Clean blocks of light instead of noisy facets |
+| 6 | **Pixel-grid snapping + sub-pixel scrolling** (camera, objects, joints, particles) | Nothing shimmers, and the view still pans smoothly |
+| 7 | **Stepped rotation** (8 directions) | Turns like flipping sprite frames |
+| 8 | **Sprite-like depth sorting** | A sword against a wall is not cut off |
+
+![Technique 8: left, the sword sinks into the wall; right, it stays whole](docs/sword-sorting.png)
+
+## Verified in Godot and Unity
+
+The recipes were run in both engines, and the recorded demos were measured frame by frame. The GIFs below are cut straight from those recordings (rendered at 320×180, then upscaled).
+
+**Plain 3D ↔ pixel3d, switching every second**
+
+![Unity: plain 3D and pixel3d switching every second](docs/unity-compare.gif)
+
+**One technique at a time: plain 3D → ① low-res + orthographic → ② outlines and creases → ③ stepped light → ④ pixel snapping**
+
+![Unity: the techniques switched on one by one](docs/unity-core.gif)
+
+*Unity 6000.2 URP. An island village built from Unity primitives, with Unity-chan (© Unity Technologies Japan/UCL).*
+
+**The same steps in Godot**
+
+![Godot: the techniques switched on one by one](docs/godot-tour.gif)
+
+*Godot 4.7.2. The official Platformer 3D demo (MIT).*
+
+What the runs changed in the recipes:
+
+- **Snapping the camera is not enough.** On a diagonal pan the screen zig-zags in 4-pixel steps. Render a 1-pixel margin and shift the upscaled image by the remainder the snap threw away: **sub-pixel scrolling** is required.
+- **Snap the character the camera follows in screen space.** Relative to the snapped camera it jumps a pixel up and down every frame, and the whole screen seems to shake.
+- **Compute the pixel size from the real window size.** With Windows display scaling the window can open smaller than requested and the grid drifts. In Godot, also turn off physics interpolation on the camera.
+- **Outlines and creases:** draw creases only on convex edges and brighten them by multiplying the colour; mixing toward white turns creases on dark surfaces into grey stripes. A 2-px outline is split 1 px inside and 1 px outside the silhouette, both in the near object's colour.
+- **Unity toon shader:** `UsePass` pass names must be upper case, and the main light must not be multiplied by `distanceAttenuation`. Each one made the shadows or the sunlight vanish.
+- **Pick the right scene.** A realistic first-person scene (the URP Garden sample) seen from above turned its fine textures into noise and never read as a game. Simple shapes and flat colours suit the look.
+
+Details and measurements are in `skills/pixel-3d/references/{godot,unity,theory}.md`.
+
+## Install
+
+Run these two commands in Claude Code:
+
+```
+/plugin marketplace add lattechicken999/pixel3d-kit
+```
+
+```
+/plugin install pixel3d-kit@pixel3d-kit
+```
+
+To try a local folder before pushing to GitHub:
+
+```bash
+claude --plugin-dir ./pixel3d-kit
+```
+
+## Usage
+
+| Do this | What happens |
+|---|---|
+| "Make this game look like pixel art" | The `pixel-3d` skill is used automatically |
+| `/pixelize` | Applies the techniques to the current project. Pick the engine, pixel size and techniques, e.g. `/pixelize three 4 1-6,8` |
+| `/pixel3d-new my-game forest cabin` | Starts a new pixel-art 3D project |
+| Give a video file or link and say "learn this and apply it" | The `learn-from-video` skill analyses frames, captions and audio, then applies what it found |
+
+## Layout
+
+```
+.claude-plugin/          plugin.json, marketplace.json, icon
+skills/pixel-3d/         SKILL.md, assets/threejs/pixel3d.js, references/{theory,godot,unity}.md
+skills/learn-from-video/ SKILL.md, scripts/extract.sh  (ffmpeg, optional yt-dlp / Whisper)
+commands/                /pixelize, /pixel3d-new
+examples/threejs-demo/   Demo with every technique switchable
+```
+
+### Run the demo
+
+From the repository folder, run the command below, then open <http://localhost:8000/examples/threejs-demo/>.
+
+```bash
+python3 -m http.server 8000
+```
+
+- Move: WASD or the arrow keys
+- `?off=all` or `?off=2,8`: start with those techniques off
+- `?t=1.3`: freeze time (for screenshots)
+- `?pose=wall`: the sword-in-the-wall pose for technique 8
+
+### Three.js API (summary)
+
+```js
+const pixel = new PixelRenderer(renderer, { pixelSize: 4 });     // 1, 2, 3, 6
+const mat   = createToonMaterial({ color, steps: 3 });           // 4
+sphericalizeNormals(geometry, 0.85); addShadowProxy(mesh, geo);  // 5
+obj.userData.pixelSnap = true;                                   // 6
+hero.rotation.y = quantizeAngle(facing, 8);                      // 7
+const flat = flattenDepth(hero, { bias: 0.4 });                  // 8
+pixel.render(scene, camera);
+```
+
+## Status
+
+- **Three.js module:** rendered in headless Chromium (WebGL2); screenshots with each technique on and off were compared.
+- **Godot recipe:** techniques 1–6 run and verified in Godot 4.7.2 (official Platformer 3D demo).
+- **Unity recipe:** techniques 1–4 and 6 run and verified in Unity 6000.2 URP 17.2. Techniques 5, 7 and 8 are still ports of the same math. PRs welcome.
+
+## Credits
+
+- The techniques were collected after watching the Short "I thought it was a cute pixel game, but it's all 3D" by [Gamit | 1분 게임 이야기](https://www.youtube.com/@gamit_log), which introduces the *Never's End* team's GDC 2026 talk.
+- This repository uses no art or assets from that video or game; only the techniques are implemented here.
+- The outline and crease shaders follow the widely known community approach to 3D pixel-art rendering.
+
+## License
+
+MIT
+
+---
+
+# 한국어
+
+[English](#pixel3d-kit) · **한국어**
+
+**3D를 손으로 찍은 도트처럼.** 이 Claude Code 플러그인은 실시간 3D 장면을 도트(픽셀아트) 게임처럼 보이게 만드는 기법 8가지를 모았습니다. 플러그인을 설치한 뒤 "도트풍으로 만들어줘"라고 하면, Claude가 프로젝트 엔진에 맞춰 기법을 적용하고 스크린샷으로 결과를 확인합니다.
 
 ![왼쪽: 기법 끔 / 오른쪽: 8가지 기법 모두 켬](docs/before-after.png)
 
@@ -128,6 +264,6 @@ pixel.render(scene, camera);
 - 이 저장소는 그 영상과 게임의 아트나 에셋을 쓰지 않습니다. 기법만 직접 구현했습니다.
 - 외곽선과 굴곡선 셰이더는 커뮤니티에 널리 알려진 3D 픽셀아트 렌더링 방식을 따릅니다.
 
-## License
+## 라이선스
 
 MIT

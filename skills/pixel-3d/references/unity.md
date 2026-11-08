@@ -3,8 +3,8 @@
 > **§1–4 and 6 were run in Unity 6000.2 (URP 17.2, Forward+)** on a
 > top-down diorama built from Unity primitives with Unity-chan, recorded with
 > Unity Recorder and checked frame by frame. The rest of this file still
-> follows the Three.js math untested. A working setup lives in the demo
-> project's `Assets/Pixel3DDemo/`.
+> follows the Three.js math untested. The shaders and scripts in §1–6 are the
+> ones that ran, in full.
 
 > **Pick a scene made for a game camera.** The first attempt used the URP
 > sample's Garden scene (built for first-person, realistic PBR textures). From

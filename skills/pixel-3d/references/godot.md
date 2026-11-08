@@ -2,9 +2,8 @@
 
 > **§1–6 were run in Godot 4.7.2** on the official Platformer 3D demo
 > (store.godotengine.org), recorded with Movie Maker and checked frame by frame.
-> The rest of this file still follows the Three.js math untested. A complete
-> working scene lives in the demo project's `pixel_demo/` folder
-> (`director.gd`, `outline.gdshader`, `toon.gdshader`).
+> The rest of this file still follows the Three.js math untested. The shaders
+> and scripts below are the ones that ran; everything needed is in this file.
 > 4.2+ is needed for `hint_normal_roughness_texture`.
 
 ## 1. Low-res render
