@@ -25,12 +25,22 @@
 
 ## Godot · Unity에서 실제로 확인한 결과
 
-두 엔진에서 레시피를 직접 실행하고, 녹화한 영상을 프레임 단위로 측정해 검증했습니다. 왼쪽은 일반 3D, 오른쪽은 기법 적용(320×180, ×4)입니다.
+두 엔진에서 레시피를 직접 실행하고, 녹화한 영상을 프레임 단위로 측정해 검증했습니다. 아래 GIF는 그 시범영상에서 바로 뽑았습니다(320×180으로 그린 뒤 확대).
 
-![Unity 6 URP: 왼쪽 일반 3D / 오른쪽 pixel3d 적용](docs/unity-diorama.png)
+**일반 3D ↔ pixel3d 적용 (1초마다 전환)**
+
+![Unity: 일반 3D와 pixel3d 적용을 1초마다 전환](docs/unity-compare.gif)
+
+**기법을 하나씩 켜기: 일반 3D → ① 저해상도·직교 카메라 → ② 외곽선·굴곡선 → ③ 단계 조명 → ④ 픽셀 스냅**
+
+![Unity: 기본 기법을 단계별로 켜는 장면](docs/unity-core.gif)
+
 *Unity 6000.2 URP. Unity 기본 도형으로 만든 섬 마을과 유니티짱(© Unity Technologies Japan/UCL)*
 
-![Godot 4.7: 왼쪽 일반 3D / 오른쪽 pixel3d 적용](docs/godot-platformer.png)
+**Godot에서 같은 순서로**
+
+![Godot: 기본 기법을 단계별로 켜는 장면](docs/godot-tour.gif)
+
 *Godot 4.7.2. 공식 Platformer 3D 데모(MIT)*
 
 검증하면서 레시피를 이렇게 고쳤습니다.
