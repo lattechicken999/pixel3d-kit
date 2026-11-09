@@ -2,6 +2,8 @@
 
 **English** · [한국어](#한국어)
 
+> **Want all 27 techniques?** [pixel3d-kit Pro on Agensi](https://www.agensi.io/skills/pixel-3d-pro-make-3d-look-like-hand-drawn-pixel-art) adds 19 more (water, grass, night, smear, 2:1 iso and more) plus verified Unity and Godot shaders. See [Pro edition](#pro-edition).
+
 **Real-time 3D that reads as hand-drawn pixel art.** This Claude Code plugin collects 8 techniques that make a real-time 3D scene look like a pixel-art game. Install it and say "make this look like pixel art": Claude applies the techniques to your project's engine and checks the result with screenshots.
 
 ![Left: techniques off / right: all 8 techniques on](docs/before-after.png)
@@ -153,13 +155,15 @@ MIT
 
 In Unity 6 URP, techniques 9–15, 17–19, 21–23 and 26 were run and verified in the scene above.
 
-Pro is sold on [Agensi](https://www.agensi.io) under a commercial licence (one per person, use in your own games and apps). This free edition stays MIT.
+**[Get pixel3d-kit Pro on Agensi](https://www.agensi.io/skills/pixel-3d-pro-make-3d-look-like-hand-drawn-pixel-art)** — sold under a commercial licence (one per person, use in your own games and apps). This free edition stays MIT.
 
 ---
 
 # 한국어
 
 [English](#pixel3d-kit) · **한국어**
+
+> **기법 27가지 전부가 필요하다면?** [Agensi의 pixel3d-kit Pro](https://www.agensi.io/skills/pixel-3d-pro-make-3d-look-like-hand-drawn-pixel-art)는 기법 19가지(물, 풀, 밤, 잔상, 2:1 아이소 등)와 검증된 Unity·Godot 셰이더를 더했습니다. 아래 [Pro 버전](#pro-버전)을 보세요.
 
 **3D를 손으로 찍은 도트처럼.** 이 Claude Code 플러그인은 실시간 3D 장면을 도트(픽셀아트) 게임처럼 보이게 만드는 기법 8가지를 모았습니다. 플러그인을 설치한 뒤 "도트풍으로 만들어줘"라고 하면, Claude가 프로젝트 엔진에 맞춰 기법을 적용하고 스크린샷으로 결과를 확인합니다.
 
@@ -312,4 +316,4 @@ MIT
 
 Unity 6 URP에서는 위 장면으로 기법 9~15, 17~19, 21~23, 26을 실행해 검증했습니다.
 
-Pro는 [Agensi](https://www.agensi.io)에서 상업용 라이선스(1인 1라이선스, 자기 게임·앱에 사용 가능)로 판매합니다. 이 무료판은 계속 MIT입니다.
+**[Agensi에서 pixel3d-kit Pro 구매하기](https://www.agensi.io/skills/pixel-3d-pro-make-3d-look-like-hand-drawn-pixel-art)** — 상업용 라이선스(1인 1라이선스, 자기 게임·앱에 사용 가능)로 판매합니다. 이 무료판은 계속 MIT입니다.
